@@ -19,9 +19,9 @@ class ChromeDriverThread(threading.Thread):
         y = math.floor(num_worker / cols) * 810
 
         options = webdriver.ChromeOptions()
+        options.add_argument("--force-device-scale-factor=0.375")
         driver = webdriver.Chrome(options=options)
 
-        options.add_argument("--force-device-scale-factor=0.375")
         driver.set_window_rect(x, y, 200, 800)
 
         driver.get("https://www.youtube.com/")
