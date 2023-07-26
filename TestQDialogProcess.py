@@ -1,9 +1,16 @@
 import sys
 import threading
-from PyQt6.QtWidgets import QApplication, QMainWindow, QPushButton, QMessageBox
+from PyQt6.QtWidgets import (
+    QApplication,
+    QMainWindow,
+    QPushButton,
+    QMessageBox,
+    QProgressDialog,
+)
 from selenium import webdriver
 from time import sleep
 import math
+from PyQt6.QtCore import QTimer
 
 
 class ChromeDriverThread(threading.Thread):
@@ -54,7 +61,7 @@ class MainWindow(QMainWindow):
         self.chrome_threads = []
 
     def start_thread(self):
-        num_thread = 20
+        num_thread = 5
         self.start_button.setEnabled(False)
         self.stop_button.setEnabled(True)
         self.stop_event.clear()  # Đảm bảo flag stop_event là chưa được set
@@ -77,9 +84,28 @@ class MainWindow(QMainWindow):
 
         if result == QMessageBox.StandardButton.Yes:
             self.stop_event.set()  # Set flag stop_event để tất cả các luồng biết dừng
-            # for thread in self.chrome_threads:
-            #     thread.join()
 
+            self.progress_dialog = QProgressDialog(self)
+            self.progress_dialog.setLabelText("Stopping...")
+            self.progress_dialog.setAutoClose(True)
+            self.progress_dialog.setAutoReset(True)
+            self.progress_dialog.setMaximum(len(self.chrome_threads))
+            self.progress_dialog.setValue(0)
+            self.progress_dialog.show()
+
+            self.timer = QTimer(self)
+            self.timer.timeout.connect(self.check_threads_status)
+            self.timer.start(100)
+
+    def check_threads_status(self):
+        finished_threads = sum(
+            1 for thread in self.chrome_threads if not thread.is_alive()
+        )
+        self.progress_dialog.setValue(finished_threads)
+
+        if finished_threads == len(self.chrome_threads):
+            self.timer.stop()
+            self.progress_dialog.hide()
             self.stop_button.setEnabled(False)
             self.start_button.setEnabled(True)
 
